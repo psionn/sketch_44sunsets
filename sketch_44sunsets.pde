@@ -11,21 +11,28 @@ String[] url = {
   "http://www.hko.gov.hk/wxinfo/aws/hko_mica/sk2/latest_SK2.jpg", 
   "http://www.transport.sa.gov.au/data/citycam/adelaideview.jpg"
 };
-PImage prev, cur, next;
-int imgIndex = 0, 
-areaHeight = 10, 
-areaWidth = 10,
-lastChecked = 0;
-int[] transitionMatrix = new int[640*480];
-int transitionFrame = 10;
-int alpha = 0;
+PImage  prev, 
+        cur,
+        next,
+        glitch;
+int     imgIndex = 0, 
+        areaHeight = 10, 
+        areaWidth = 10,
+        lastChecked = 0,
+        transitionFrame = 10,
+        alpha = 0;
+int[]   transitionMatrix = new int[640*480];
+float   glitchAlpha = 0;
 
-boolean debugMode = false;
+boolean debugMode = false,
+        glitching = false;
 
 void setup() {
   size(640, 480);
   cur = loadImage(url[imgIndex]);
   cur = fitImage(cur);
+  
+  glitch = createImage(width, height, RGB);
   prev = cur;
 }
 
@@ -47,6 +54,14 @@ void draw() {
       lastChecked = millis();
       println(month() + "/"+ day() + " " + hour() + ":" + nf(minute(),2) + ":" + nf(second(),2) + " - Checking...");
       getImage(false);
+    }
+    if (glitching) {
+      
+      glitch(1);
+      glitchAlpha = map(mouseX, 0, width, 0, 255);
+      tint(255, glitchAlpha);
+//      noTint();
+      image(glitch, 0, 0); 
     }
   }
 
@@ -112,5 +127,21 @@ PImage fitImage(PImage img) {
 }
 
 void glitch(int segment) {
+//  try {
+//    glitch = (PImage) cur.clone();
+//  } catch (Exception e) {
+//    println("Clone failed");
+//  }
+  glitch.loadPixels();
+  for (int i = 0; i < width*height; i++) {
+    glitch.pixels[i] += cur.pixels[i] /10;
+  }
+  glitch.updatePixels();
 }
+
+void keyPressed() {
+  glitching = !glitching; 
+}
+
+
 
