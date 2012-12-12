@@ -14,29 +14,40 @@ String[] url = {
 PImage prev, cur, next;
 int imgIndex = 0, 
 areaHeight = 10, 
-areaWidth = 10;
+areaWidth = 10,
+lastChecked = 0;
 int[] transitionMatrix = new int[640*480];
 int transitionFrame = 10;
 int alpha = 0;
+
+boolean debugMode = false;
 
 void setup() {
   size(640, 480);
   cur = loadImage(url[imgIndex]);
   cur = fitImage(cur);
   prev = cur;
-  frameRate(10);
 }
 
 void draw() {
   noTint();
   image(cur, 0, 0);
-  
-  tint(255,alpha);
+
+  tint(255, alpha);
   image(prev, 0, 0);
-  println(checkImage());
-  if (frameCount % 30 == 0) {
-    getImage();
+  if (frameCount % 30 == 0 && debugMode) {
+    getImage(true);
     transitionFrame = 0;
+  } 
+  else {
+    if (checkImage(cur) < 80) {
+      getImage(true);
+      transitionFrame = 0;
+    } else if ( millis() - lastChecked > 10000 ) {
+      lastChecked = millis();
+      println(month() + "/"+ day() + " " + hour() + ":" + nf(minute(),2) + ":" + nf(second(),2) + " - Checking...");
+      getImage(false);
+    }
   }
 
   transition();
@@ -51,41 +62,38 @@ void transition() {
     cur = next;
     alpha = 255;
   }
-//  cur.loadPixels();
-//  next.loadPixels();
-//  println(cur.pixels.length + " " + next.pixels.length);
-//  for (int i = 0; i < cur.pixels.length; i++) {
-//    if (transitionFrame == 0) transitionMatrix[i] = (cur.pixels[i] - next.pixels[i]) / 10;
-//    cur.pixels[i] += transitionMatrix[i];
-//  }
-//  cur.updatePixels();
+
   alpha -= (255/10);
   transitionFrame++;
 }
-boolean getImage() {
-  println(url[imgIndex]);
-  imgIndex = (imgIndex+1) % url.length; 
+boolean getImage(boolean getNewImage) {
+  if (getNewImage) {
+    imgIndex = (imgIndex+1) % url.length;
+    println(month() + "/"+ day() + " " + hour() + ":" + nf(minute(),2) + ":" + nf(second(),2) + " - " + url[imgIndex]);
+
+  }
   byte[] imgBytes = loadBytes(url[imgIndex]);
   if (imgBytes.length < 500) {
-    return getImage();
+    return getImage(getNewImage);
   } 
   else {
     Image awtImage = Toolkit.getDefaultToolkit().createImage(imgBytes);
     next = loadImageMT(awtImage);
+    if (checkImage(next) < 80) return getImage(true);
     next = fitImage(next);
     //  cur = loadImage(url[imgIndex]);
     return true;
   }
 }
 
-float checkImage() {
-  cur.loadPixels();
-  int pixCount = cur.width * cur.height;
-  int startPix = (cur.width*5)+(cur.width/2) - 5;
+float checkImage(PImage img) {
+  img.loadPixels();
+  int pixCount = img.width * img.height;
+  int startPix = (img.width*5)+(img.width/2) - 5;
   float totalBrightness = 0;
   for (int i = 0; i < areaHeight; i ++ ) {
     for (int j = 0; j < areaWidth; j++ ) {
-      totalBrightness += brightness(cur.pixels[startPix + (j) + (i*cur.width)]);
+      totalBrightness += brightness(img.pixels[startPix + (j) + (i*img.width)]);
     }
   }  
   return totalBrightness/(areaHeight*areaWidth);
@@ -101,5 +109,8 @@ PImage fitImage(PImage img) {
     img.resize(ceil(img.width/wR), ceil(img.height/wR));
   }
   return img;
+}
+
+void glitch(int segment) {
 }
 
